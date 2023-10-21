@@ -12,7 +12,7 @@ table = {'우월': [10, 1,  10, [9.54,  10.94, 12.34, 13.75, 15.15, 16.55, 17.95
          '방어': [10, 91, 100,[4.77,  5.47,  6.18,  6.88,  7.59,  8.29,  9.00,  9.70,  10.40, 11.11, 11.81, 12.52, 13.22, 13.93, 14.63]]}
          
 
-abbr = {'홍': '횽련', '모': '모더니아', '앨': '앨리스', '백': '백설', '맥':'맥스웰', '볼':'볼륨',
+abbr = {'홍': '홍련', '모': '모더니아', '앨': '앨리스', '백': '백설', '맥':'맥스웰', '볼':'볼륨', '누': '누아르', '도': '도로시', '순': '수니스', '길':'길로틴',
         '뚝': '뚝배기', '갑': '갑빠', '장': '장갑', '신': '신발',
         '우월': '우월코드 데미지 증가', '명중': '명중률 증가', '장탄': '최대 장탄수 증가', '공증': '공격력 증가', '차뎀': '차지 데미지 증가', '차속': '차지 속도 증가', 
         '크뎀': '크리티컬 데미지 증가', '크확': '크리티컬 확률 증가', '방어': '방어력 증가'
@@ -24,15 +24,19 @@ effective = {'홍' : ['우월','공증', '장탄', '명중'],
              '백' : ['우월','공증', '크뎀', '차속'],
              '맥' : ['우월','공증', '장탄', '차뎀'],
              '볼' : ['우월','공증', '장탄', '명중'],
+             '누' : ['우월','공증', '장탄', '명중'],
+             '도' : ['우월','공증', '명중'],
+             '순' : ['우월','공증', '명중'],
+             '길' : ['우월','공증', '장탄'],
 }
 
-NIKKES = ['홍', '모', '앨', '맥', '백', '볼']
+NIKKES = ['홍', '모', '앨', '맥', '백', '볼', '누', '도', '순', '길']
 PIECES = ['뚝', '갑', '장', '신']
 
 def clamp(num, min, max):
     return min if num < min else max if num > max else num
 
-MODULE_MAX = 10
+MODULE_MAX = 20
 RECHARGE_SECONDS = 60
 #RECHARGE_SECONDS = 5
 
@@ -60,7 +64,7 @@ class Option():
 
     def score(self, nikke):
         if self.effect in effective[nikke]:
-            return 15 + self.idx+1
+            return 20 + (self.idx+1)**1.62
         else:
             return 0
 
@@ -72,6 +76,10 @@ class Piece():
         for p in [100, 50, 30]:
             option = Option(p)
             self.options.append(option)
+
+    def reset(self):
+        for o in self.options:
+            o.reset()
 
     def over(self):
         for o in self.options:
@@ -200,14 +208,22 @@ class Nikke():
 
         self.curPiece = self.dPiece['뚝']
 
+    def reset(self):
+        self.usedModule = 0
+        for n in PIECES:
+            self.dPiece[n].reset()
+
     def useModule(self, moduleCount):
         self.usedModule += moduleCount
 
     def desc(self):
-        return '%s에 사용한 모듈수: %d \n'%(abbr[self.name], self.usedModule)
+        return '%s에 사용한 커스텀 모듈수: %d \n'%(abbr[self.name], self.usedModule)
+
+    def scoreInfo(self):
+        return '옵션 획득 점수: %d - 모듈 사용수: %d = 비틱점수: %d \n'%(self.optionScore(), self.usedModule, self.score())
 
     def info(self):
-        out = ''
+        out = self.scoreInfo()
         out += self.desc()
 
         for n, p in self.dPiece.items():
@@ -216,12 +232,14 @@ class Nikke():
 
         return out
 
-    def score(self):
+    def optionScore(self):
         s = 0
         for n, p in self.dPiece.items():
             s += p.score(self.name)
-
         return s
+
+    def score(self):
+        return self.optionScore() - self.usedModule
 
 class Account():
     def __init__(self, nick):
@@ -235,6 +253,10 @@ class Account():
 
         self.curNikke = self.dNikke['홍']
 
+    def reset(self, nikke):
+        self.dNikke[nikke].reset()
+        return '%s 리셋 성공'%(abbr(nikke))
+
     def rechargeModule(self):
         self.module = clamp(self.module + int((datetime.now() - self.lastAccess).seconds/RECHARGE_SECONDS), 0, MODULE_MAX)
 
@@ -244,7 +266,7 @@ class Account():
         if self.module >= needModule:
             self.lastAccess = datetime.now()
             self.module = self.module - needModule
-            self.curNikke.useModule(needModule)            
+            self.curNikke.useModule(needModule)
             return True, 0
         else:
             return False, RECHARGE_SECONDS-(datetime.now() - self.lastAccess).seconds
@@ -255,7 +277,6 @@ class Account():
     def over(self, isCali=False):
         needModule = self.curNikke.curPiece.calcOverNeedModule()
         success, timeToCharge = self.processModulel(needModule)
-        out = ''
         
         if success:
             if isCali:
@@ -263,7 +284,7 @@ class Account():
             else:
                 self.curNikke.curPiece.over()
 
-            out += '%s %s 오버 성공 \n'%(abbr[self.curNikke.name], abbr[self.curNikke.curPiece.name])
+            out = '%s %s 오버 성공 \n'%(abbr[self.curNikke.name], abbr[self.curNikke.curPiece.name])
             out += self.curNikke.desc()
             out += self.curNikke.curPiece.desc()
             out += self.desc()
@@ -279,11 +300,10 @@ class Account():
 
         needModule = self.curNikke.curPiece.calcLockNeedModule()
         success, timeToCharge = self.processModulel(needModule)
-        out = ''
         
         if success:
             self.curNikke.curPiece.lock(index)
-            out += '잠금 성공\n'
+            out = '잠금 성공\n'
             out += self.curNikke.desc()
             out += self.curNikke.curPiece.desc()
             out += self.desc()
@@ -299,8 +319,7 @@ class Account():
             return msg
 
         self.curNikke.curPiece.unlock(index)
-        out = ''
-        out += '잠금 해제 성공\n'
+        out = '잠금 해제 성공\n'
         out += self.curNikke.curPiece.desc()
         
         return out
@@ -308,8 +327,7 @@ class Account():
     def changeCurNikkePiece(self, nikke, piece):
         self.curNikke = self.dNikke[nikke]
         self.curNikke.curPiece = self.curNikke.dPiece[piece]
-        out = ''
-        out += ' %s %s로 오버할 장비 변경\n'%(abbr[nikke], abbr[piece])
+        out = ' %s %s로 오버할 장비 변경\n'%(abbr[nikke], abbr[piece])
         out += self.curNikke.desc()
         out += self.curNikke.curPiece.desc()
 

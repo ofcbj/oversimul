@@ -10,14 +10,14 @@ TOKEN = 'MTE0MzE0NjM3NzQwNTI3NjI3Mw.GZhA6a.2-lmFpbAOjYak9izAo9iSj1xJASrMMD8Lmxlu
 class MyClient(discord.Client):
     def loadAccount(self):
         try:
-            with open('d:/discord/account', 'rb') as f:
+            with open('./account', 'rb') as f:
                 print('load account')
                 self.dAccount = pickle.load(f)
         except:
             print('account 파일 없음')
 
     def saveAccount(self):
-        with open('d:/discord/account', 'wb') as f:
+        with open('./account', 'wb') as f:
             print('save account')
             pickle.dump(self.dAccount, f)
 

@@ -45,21 +45,16 @@ class MyClient(discord.Client):
         if message.author == self.user:
             return
  
-        #command = message.content.replace(" ", "")
-        #print(command)
-
-        command = message.content
         ret = False
         for c in ['오버', '수치', '잠금', '해제', '비틱', '관리', '리셋']:
-            if c in command:
+            if c in message.content:
                 ret = True
 
         if ret == False:
             return
 
-        print(message.author.name, message.author.nick, command)
+        print(message.author.name, message.author.display_name, message.content)
         if message.author.name not in self.dAccount:
-            #account = over.Account(message.author.nick if message.author.nick != None else message.author.name)
             account = over.Account(message.author.display_name)
             self.dAccount[message.author.name] = account
         else:

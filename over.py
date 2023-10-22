@@ -293,7 +293,7 @@ class Account():
         else:
             return self.moduleMsg(timeToCharge)
 
-    def modeulMsg(self, timeToCharge):
+    def moduleMsg(self, timeToCharge):
         return '커스텀 모듈 갯수가 부족합니다.\n커스텀 모듈은 %d분에 1개씩 최대 %d개 충전됩니다. 남은시간 %d초'%(RECHARGE_SECONDS/60, MAX_MODULE, timeToCharge)
 
     def lock(self, index):
@@ -313,7 +313,7 @@ class Account():
             out += self.desc()
             return out
         else:
-            return self.modeulMsg(timeToCharge)
+            return self.moduleMsg(timeToCharge)
 
     def unlock(self, index):
         index -= 1

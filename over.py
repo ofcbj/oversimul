@@ -37,8 +37,8 @@ PIECES = ['뚝', '갑', '장', '신']
 def clamp(num, min, max):
     return min if num < min else max if num > max else num
 
-MODULE_MAX = 10
-RECHARGE_SECONDS = 600
+MODULE_MAX = 20
+RECHARGE_SECONDS = 180
 #RECHARGE_SECONDS = 5
 
 class Option():
@@ -256,12 +256,12 @@ class Account():
 
     def reset(self, nikke):
         self.dNikke[nikke].reset()
-        return '%s 리셋 성공'%(abbr(nikke))
+        return '%s 리셋 성공'%(abbr[nikke])
 
     def rechargeModule(self):
         self.module = clamp(self.module + int((datetime.now() - self.lastAccess).seconds/RECHARGE_SECONDS), 0, MODULE_MAX)
 
-    def processModulel(self, needModule):
+    def processModule(self, needModule):
         self.rechargeModule()
         
         if self.module >= needModule:
@@ -277,7 +277,7 @@ class Account():
 
     def over(self, isCali=False):
         needModule = self.curNikke.curPiece.calcOverNeedModule()
-        success, timeToCharge = self.processModulel(needModule)
+        success, timeToCharge = self.processModule(needModule)
         
         if success:
             if isCali:
@@ -291,7 +291,10 @@ class Account():
             out += self.desc()
             return out
         else:
-            return '커스텀 모듈 갯수가 부족합니다.\n커스텀 모듈은 %d초에 1개씩 충전됩니다. 남은시간 %d초'%(RECHARGE_SECONDS, timeToCharge)
+            return self.moduleMsg(timeToCharge)
+
+    def modeulMsg(self, timeToCharge):
+        return '커스텀 모듈 갯수가 부족합니다.\n커스텀 모듈은 %d분에 1개씩 최대 %d개 충전됩니다. 남은시간 %d초'%(RECHARGE_SECONDS/60, MAX_MODULE, timeToCharge)
 
     def lock(self, index):
         index -= 1
@@ -300,7 +303,7 @@ class Account():
             return msg
 
         needModule = self.curNikke.curPiece.calcLockNeedModule()
-        success, timeToCharge = self.processModulel(needModule)
+        success, timeToCharge = self.processModule(needModule)
         
         if success:
             self.curNikke.curPiece.lock(index)
@@ -310,7 +313,7 @@ class Account():
             out += self.desc()
             return out
         else:
-            return '커스텀 모듈 갯수가 부족합니다.\n커스텀 모듈은 1분에 1개씩 충전됩니다. 남은시간 %d초'%(timeToCharge)
+            return self.modeulMsg(timeToCharge)
 
     def unlock(self, index):
         index -= 1

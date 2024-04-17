@@ -5,7 +5,7 @@ import discord
 import over
 
 
-TOKEN = 'MTE0MzE0NjM3NzQwNTI3NjI3Mw.GZhA6a.2-lmFpbAOjYak9izAo9iSj1xJASrMMD8Lmxluo'
+TOKEN = 'TestToken'
 
 class MyClient(discord.Client):
     def loadAccount(self):
